@@ -7,18 +7,30 @@ import com.myaccess.myaccesswebportal.repository.UserRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Configuration
 public class DataLoader {
 
     @Bean
     CommandLineRunner loadInitialData(UserRepository userRepository,
-                                      DepartmentRepository departmentRepository) {
+                                      DepartmentRepository departmentRepository,
+                                      PasswordEncoder passwordEncoder) {
         return args -> {
-            if (userRepository.count() == 0) {
-                Admin admin = new Admin("admin@example.com", "changeme");
+            String adminEmail = "admin@example.com";
+            String rawPassword = "admin123";
+
+            userRepository.findByEmail(adminEmail).ifPresentOrElse(existing -> {
+                // update password if needed
+                existing.setPasswordHash(passwordEncoder.encode(rawPassword));
+                userRepository.save(existing);
+            }, () -> {
+                // create if missing
+                Admin admin = new Admin(adminEmail, passwordEncoder.encode(rawPassword));
                 userRepository.save(admin);
-            }
+            });
+
+            System.out.println("Ensured admin user: " + adminEmail + " / " + rawPassword);
 
             if (departmentRepository.count() == 0) {
                 Department it = new Department("IT");
