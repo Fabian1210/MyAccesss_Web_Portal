@@ -36,8 +36,10 @@ public class SecurityConfig {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/css/**", "/js/**", "/images/**").permitAll()
+                        .requestMatchers("/users/**").hasRole("ADMIN")  //admins manage users
                         .requestMatchers("/").authenticated()
                         .anyRequest().authenticated()
+
                 )
                 .formLogin(Customizer.withDefaults())
                 .logout(logout -> logout.logoutSuccessUrl("/login?logout"));

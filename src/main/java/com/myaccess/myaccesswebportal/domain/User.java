@@ -1,6 +1,7 @@
 package com.myaccess.myaccesswebportal.domain;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import jakarta.persistence.Transient;
 
 @Entity
 @Table(name = "users")
@@ -67,4 +68,18 @@ public abstract class User {
     }
 
     public abstract boolean hasAccess(String featureKey);
+
+    @Transient
+    public String getRoleLabel() {
+        if (this instanceof Admin) {
+            return "Admin";
+        } else if (this instanceof Manager) {
+            return "Manager";
+        } else if (this instanceof Employee) {
+            return "Employee";
+        } else {
+            return "User";
+        }
+    }
+
 }
