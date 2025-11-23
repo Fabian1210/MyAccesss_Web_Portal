@@ -3,6 +3,7 @@ package com.myaccess.myaccesswebportal.domain;
 import jakarta.persistence.*;
 
 @Entity
+@Table(name = "department")
 public class Department {
 
     @Id
@@ -12,7 +13,7 @@ public class Department {
     @Column(nullable = false, unique = true)
     private String name;
 
-    protected Department() {
+    public Department() {
     }
 
     public Department(String name) {
