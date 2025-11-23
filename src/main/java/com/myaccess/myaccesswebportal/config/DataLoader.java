@@ -25,8 +25,7 @@ public class DataLoader {
                 existing.setPasswordHash(passwordEncoder.encode(rawPassword));
                 userRepository.save(existing);
             }, () -> {
-                // create if missing
-                Admin admin = new Admin(adminEmail, passwordEncoder.encode(rawPassword));
+                Admin admin = new Admin(adminEmail, passwordEncoder.encode(rawPassword), true);
                 userRepository.save(admin);
             });
 

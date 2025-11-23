@@ -1,121 +1,144 @@
 package com.myaccess.myaccesswebportal.controller;
 
 import com.myaccess.myaccesswebportal.domain.Admin;
-import com.myaccess.myaccesswebportal.domain.Employee;
-import com.myaccess.myaccesswebportal.domain.Manager;
 import com.myaccess.myaccesswebportal.domain.User;
-import com.myaccess.myaccesswebportal.dto.UserForm;
 import com.myaccess.myaccesswebportal.repository.UserRepository;
 import jakarta.validation.Valid;
-import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
-import com.myaccess.myaccesswebportal.dto.UserEditForm;
-import org.springframework.web.server.ResponseStatusException;
-import org.springframework.http.HttpStatus;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Controller
-@RequestMapping("/users")
+@RequestMapping("/admin/users")
+@PreAuthorize("hasRole('ADMIN')")
 public class UserController {
 
     private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
 
-    public UserController(UserRepository userRepository,
-                          PasswordEncoder passwordEncoder) {
+    public UserController(UserRepository userRepository) {
         this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
     }
 
     @GetMapping
-    public String listUsers(@RequestParam(value = "q", required = false) String query,
-                            Model model) {
+    public String listUsers(Model model,
+                            @RequestParam(value = "q", required = false) String query) {
+
         List<User> users;
         if (query != null && !query.isBlank()) {
             users = userRepository.findByEmailContainingIgnoreCase(query);
+            model.addAttribute("searchQuery", query);
         } else {
             users = userRepository.findAll();
         }
 
         model.addAttribute("users", users);
-        model.addAttribute("query", query == null ? "" : query);
-
         return "users/list";
     }
 
     @GetMapping("/new")
     public String showCreateForm(Model model) {
-        model.addAttribute("userForm", new UserForm());
+        // Use a concrete subclass instead of abstract User
+        model.addAttribute("user", new Admin());
         return "users/form";
     }
 
     @PostMapping
-    public String createUser(@Valid @ModelAttribute("userForm") UserForm userForm,
-                             BindingResult bindingResult) {
+    public String createUser(@Valid @ModelAttribute("user") User user,
+                             BindingResult bindingResult,
+                             RedirectAttributes redirectAttributes) {
 
         if (bindingResult.hasErrors()) {
             return "users/form";
         }
 
-        String encodedPassword = passwordEncoder.encode(userForm.getPassword());
-        User newUser;
+        // Do NOT call user.setCreatedAt(...) – createdAt should be set in the entity
+        userRepository.save(user);
 
-        switch (userForm.getRole().toUpperCase()) {
-            case "ADMIN" -> newUser = new Admin(userForm.getEmail(), encodedPassword);
-            case "MANAGER" -> newUser = new Manager(userForm.getEmail(), encodedPassword);
-            case "EMPLOYEE" -> newUser = new Employee(userForm.getEmail(), encodedPassword);
-            default -> {
-                bindingResult.rejectValue("role", "invalid.role", "Role must be ADMIN, MANAGER, or EMPLOYEE");
-                return "users/form";
-            }
-        }
-
-        userRepository.save(newUser);
-        return "redirect:/users";
+        redirectAttributes.addFlashAttribute("successMessage", "User created successfully.");
+        return "redirect:/admin/users";
     }
 
     @GetMapping("/{id}/edit")
-    public String showEditForm(@PathVariable Long id, Model model) {
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+    public String showEditForm(@PathVariable Long id,
+                               Model model,
+                               RedirectAttributes redirectAttributes) {
 
-        UserEditForm form = new UserEditForm();
-        form.setEmail(user.getEmail());
-        form.setEnabled(user.isEnabled());
-
-        model.addAttribute("userEditForm", form);
-        model.addAttribute("userId", user.getId());
-
-        return "users/edit";
-    }
-
-    @PostMapping("/{id}/edit")
-    public String updateUser(@PathVariable Long id,
-                             @Valid @ModelAttribute("userEditForm") UserEditForm userEditForm,
-                             BindingResult bindingResult,
-                             Model model) {
-        if (bindingResult.hasErrors()) {
-            model.addAttribute("userId", id);
-            return "users/edit";
+        Optional<User> userOpt = userRepository.findById(id);
+        if (userOpt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "User not found.");
+            return "redirect:/admin/users";
         }
 
-        User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+        model.addAttribute("user", userOpt.get());
+        return "users/form";
+    }
 
-        user.setEmail(userEditForm.getEmail());
-        user.setEnabled(userEditForm.isEnabled());
-        userRepository.save(user);
+    // HANDLE UPDATE
+    @PostMapping("/{id}")
+    public String updateUser(@PathVariable Long id,
+                             @Valid @ModelAttribute("user") User user,
+                             BindingResult bindingResult,
+                             RedirectAttributes redirectAttributes) {
 
-        return "redirect:/users";
+        if (bindingResult.hasErrors()) {
+            return "users/form";
+        }
+
+        // Load existing user
+        Optional<User> existingOpt = userRepository.findById(id);
+        if (existingOpt.isEmpty()) {
+            redirectAttributes.addFlashAttribute("errorMessage", "User not found.");
+            return "redirect:/admin/users";
+        }
+
+        User existing = existingOpt.get();
+
+        // Copy over fields that are allowed to change
+        existing.setEmail(user.getEmail());
+        existing.setEnabled(user.isEnabled());
+        existing.setPasswordHash(user.getPasswordHash());
+        // if you have other mutable fields (like department, etc.), copy them too
+
+        userRepository.save(existing);
+
+        redirectAttributes.addFlashAttribute("successMessage", "User updated successfully.");
+        return "redirect:/admin/users";
     }
 
     @PostMapping("/{id}/delete")
-    public String deleteUser(@PathVariable Long id) {
-        userRepository.deleteById(id);
-        return "redirect:/users";
+    public String deleteUser(@PathVariable Long id,
+                             RedirectAttributes redirectAttributes) {
+
+        if (!userRepository.existsById(id)) {
+            redirectAttributes.addFlashAttribute("errorMessage", "User not found.");
+        } else {
+            userRepository.deleteById(id);
+            redirectAttributes.addFlashAttribute("successMessage", "User deleted successfully.");
+        }
+
+        return "redirect:/admin/users";
+    }
+
+    @GetMapping("/search")
+    public String searchUsers(@RequestParam("q") String query) {
+        return "redirect:/admin/users?q=" + query;
+    }
+
+    @GetMapping("/report")
+    public String userReport(Model model) {
+        List<User> users = userRepository.findAll();
+
+        model.addAttribute("reportTitle", "User Accounts Report");
+        model.addAttribute("generatedAt", LocalDateTime.now());
+        model.addAttribute("users", users);
+
+        return "users/report";
     }
 }

@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title th:text="${reportTitle}">User Accounts Report</title>
+    <meta charset="UTF-8" />
+    <link rel="stylesheet" th:href="@{/css/styles.css}" />
+</head>
+<body>
+<header>
+    <h1 th:text="${reportTitle}">User Accounts Report</h1>
+    <p>
+        Generated at:
+        <span th:text="${#temporals.format(generatedAt, 'yyyy-MM-dd HH:mm:ss')}">
+            2025-01-01 12:00:00
+        </span>
+    </p>
+    <p>
+        Total users:
+        <span th:text="${#lists.size(users)}">0</span>
+    </p>
+    <hr/>
+</header>
+
+<main>
+    <table>
+        <thead>
+        <tr>
+            <th>Email</th>
+            <th>Role / Type</th>
+            <th>Enabled</th>
+            <th>Created At</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="u : ${users}">
+            <td th:text="${u.email}">email@example.com</td>
+            <td th:text="${u.userType}">ADMIN</td>
+            <td th:text="${u.enabled}">true</td>
+            <td th:text="${#temporals.format(u.createdAt, 'yyyy-MM-dd HH:mm')}">
+                2025-01-01 09:30
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+
+</body>
+</html>

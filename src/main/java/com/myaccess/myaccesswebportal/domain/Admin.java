@@ -1,4 +1,5 @@
 package com.myaccess.myaccesswebportal.domain;
+
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 
@@ -6,17 +7,11 @@ import jakarta.persistence.Entity;
 @DiscriminatorValue("ADMIN")
 public class Admin extends User {
 
-    protected Admin() {
+    public Admin() {
         super();
     }
 
-    public Admin(String email, String passwordHash) {
+    public Admin(String email, String passwordHash, boolean enabled) {
         super(email, passwordHash);
-    }
-
-    //master access
-    @Override
-    public boolean hasAccess(String featureKey) {
-        return true;
     }
 }

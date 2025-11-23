@@ -17,7 +17,8 @@ public class Employee extends User {
     @Override
     public boolean hasAccess(String featureKey) {
         return switch (featureKey) {
-            case "VIEW_SELF", "VIEW_PROJECTS" -> true;
+            case "VIEW_SELF_PROFILE",
+                 "EDIT_SELF_PROFILE" -> true;
             default -> false;
         };
     }

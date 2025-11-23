@@ -1,4 +1,5 @@
 package com.myaccess.myaccesswebportal.domain;
+
 import jakarta.persistence.DiscriminatorValue;
 import jakarta.persistence.Entity;
 
@@ -17,7 +18,9 @@ public class Manager extends User {
     @Override
     public boolean hasAccess(String featureKey) {
         return switch (featureKey) {
-            case "VIEW_USERS", "VIEW_DEPARTMENT", "VIEW_REPORTS",
+            case "VIEW_USERS",
+                 "VIEW_DEPARTMENT",
+                 "VIEW_REPORTS",
                  "MANAGE_PROJECTS" -> true;
             default -> false;
         };
