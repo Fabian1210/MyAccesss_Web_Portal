@@ -12,6 +12,9 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import com.myaccess.myaccesswebportal.dto.UserEditForm;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.http.HttpStatus;
 
 import java.util.List;
 
@@ -72,6 +75,47 @@ public class UserController {
         }
 
         userRepository.save(newUser);
+        return "redirect:/users";
+    }
+
+    @GetMapping("/{id}/edit")
+    public String showEditForm(@PathVariable Long id, Model model) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        UserEditForm form = new UserEditForm();
+        form.setEmail(user.getEmail());
+        form.setEnabled(user.isEnabled());
+
+        model.addAttribute("userEditForm", form);
+        model.addAttribute("userId", user.getId());
+
+        return "users/edit";
+    }
+
+    @PostMapping("/{id}/edit")
+    public String updateUser(@PathVariable Long id,
+                             @Valid @ModelAttribute("userEditForm") UserEditForm userEditForm,
+                             BindingResult bindingResult,
+                             Model model) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("userId", id);
+            return "users/edit";
+        }
+
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
+
+        user.setEmail(userEditForm.getEmail());
+        user.setEnabled(userEditForm.isEnabled());
+        userRepository.save(user);
+
+        return "redirect:/users";
+    }
+
+    @PostMapping("/{id}/delete")
+    public String deleteUser(@PathVariable Long id) {
+        userRepository.deleteById(id);
         return "redirect:/users";
     }
 }
