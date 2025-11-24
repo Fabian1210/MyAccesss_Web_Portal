@@ -22,7 +22,12 @@ public class HomeController {
     }
 
     @GetMapping("/")
-    public String home(Model model) {
+    public String splash() {
+        return "home/index";
+    }
+
+    @GetMapping("/dashboard")
+    public String dashboard(Model model) {
         long userCount = userRepository.count();
         long departmentCount = departmentRepository.count();
         long projectCount = projectRepository.count();
@@ -31,6 +36,6 @@ public class HomeController {
         model.addAttribute("departmentCount", departmentCount);
         model.addAttribute("projectCount", projectCount);
 
-        return "home";
+        return "dashboard";
     }
 }

@@ -5,7 +5,19 @@
 <body>
 <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4" th:fragment="mainNav">
     <div class="container-fluid">
-        <a class="navbar-brand" th:href="@{/}">MyAccess Web Portal</a>
+
+        <a class="navbar-brand"
+           sec:authorize="isAnonymous()"
+           th:href="@{/}">
+            MyAccess Web Portal
+        </a>
+
+        <a class="navbar-brand"
+           sec:authorize="isAuthenticated()"
+           th:href="@{/dashboard}">
+            MyAccess Web Portal
+        </a>
+
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
                 aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
@@ -14,8 +26,13 @@
         <div class="collapse navbar-collapse" id="mainNavbar">
             <ul class="navbar-nav me-auto">
 
-                <li class="nav-item">
+                <!-- Home: splash for anon, dashboard for logged-in -->
+                <li class="nav-item" sec:authorize="isAnonymous()">
                     <a class="nav-link" th:href="@{/}">Home</a>
+                </li>
+
+                <li class="nav-item" sec:authorize="isAuthenticated()">
+                    <a class="nav-link" th:href="@{/dashboard}">Home</a>
                 </li>
 
                 <li class="nav-item" sec:authorize="hasRole('ADMIN')">
@@ -25,6 +42,7 @@
                 <li class="nav-item" sec:authorize="hasRole('ADMIN')">
                     <a class="nav-link" th:href="@{/admin/users/report}">User Reports</a>
                 </li>
+
                 <li class="nav-item" sec:authorize="isAuthenticated()">
                     <a class="nav-link" th:href="@{/profile}">My Profile</a>
                 </li>
