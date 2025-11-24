@@ -5,6 +5,7 @@ import com.myaccess.myaccesswebportal.dto.DepartmentForm;
 import com.myaccess.myaccesswebportal.repository.DepartmentRepository;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -14,7 +15,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 @Controller
-@RequestMapping("/departments")
+@RequestMapping("/admin/departments")
+@PreAuthorize("hasRole('ADMIN')")
 public class DepartmentController {
 
     private final DepartmentRepository departmentRepository;
@@ -57,7 +59,7 @@ public class DepartmentController {
         Department department = new Department(departmentForm.getName().trim());
         departmentRepository.save(department);
 
-        return "redirect:/departments";
+        return "redirect:/admin/departments";
     }
 
     @GetMapping("/{id}/edit")
@@ -90,12 +92,12 @@ public class DepartmentController {
         department.setName(departmentForm.getName().trim());
         departmentRepository.save(department);
 
-        return "redirect:/departments";
+        return "redirect:/admin/departments";
     }
 
     @PostMapping("/{id}/delete")
     public String deleteDepartment(@PathVariable Long id) {
         departmentRepository.deleteById(id);
-        return "redirect:/departments";
+        return "redirect:/admin/departments";
     }
 }

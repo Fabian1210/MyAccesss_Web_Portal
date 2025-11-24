@@ -26,7 +26,7 @@
         <div class="collapse navbar-collapse" id="mainNavbar">
             <ul class="navbar-nav me-auto">
 
-                <!-- Home: splash for anon, dashboard for logged-in -->
+
                 <li class="nav-item" sec:authorize="isAnonymous()">
                     <a class="nav-link" th:href="@{/}">Home</a>
                 </li>
@@ -37,6 +37,10 @@
 
                 <li class="nav-item" sec:authorize="hasRole('ADMIN')">
                     <a class="nav-link" th:href="@{/admin/users}">User Admin</a>
+                </li>
+
+                <li class="nav-item" sec:authorize="hasRole('ADMIN')">
+                    <a class="nav-link" th:href="@{/admin/departments}">Departments</a>
                 </li>
 
                 <li class="nav-item" sec:authorize="hasRole('ADMIN')">
