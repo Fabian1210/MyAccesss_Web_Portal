@@ -1,17 +1,20 @@
 package com.myaccess.myaccesswebportal.controller;
 
 import com.myaccess.myaccesswebportal.domain.Admin;
+import com.myaccess.myaccesswebportal.domain.Employee;
+import com.myaccess.myaccesswebportal.domain.Manager;
 import com.myaccess.myaccesswebportal.domain.User;
+import com.myaccess.myaccesswebportal.dto.UserForm;
 import com.myaccess.myaccesswebportal.repository.UserRepository;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,9 +24,12 @@ import java.util.Optional;
 public class UserController {
 
     private final UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserController(UserRepository userRepository) {
+    public UserController(UserRepository userRepository,
+                          PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @GetMapping
@@ -44,23 +50,47 @@ public class UserController {
 
     @GetMapping("/new")
     public String showCreateForm(Model model) {
-        // Use a concrete subclass instead of abstract User
-        model.addAttribute("user", new Admin());
+        model.addAttribute("editing", false);
+        model.addAttribute("userForm", new UserForm());
         return "users/form";
     }
 
     @PostMapping
-    public String createUser(@Valid @ModelAttribute("user") User user,
+    public String createUser(@Valid @ModelAttribute("userForm") UserForm form,
                              BindingResult bindingResult,
-                             RedirectAttributes redirectAttributes) {
+                             RedirectAttributes redirectAttributes,
+                             Model model) {
 
         if (bindingResult.hasErrors()) {
+            model.addAttribute("editing", false);
             return "users/form";
         }
 
-        // Do NOT call user.setCreatedAt(...) – createdAt should be set in the entity
-        userRepository.save(user);
+        User newUser;
+        String encodedPassword = passwordEncoder.encode(form.getPassword());
 
+        switch (form.getRole()) {
+            case "ADMIN" -> newUser = new Admin(
+                    form.getEmail(),
+                    encodedPassword,
+                    true
+            );
+            case "MANAGER" -> newUser = new Manager(
+                    form.getEmail(),
+                    encodedPassword
+            );
+            case "EMPLOYEE" -> newUser = new Employee(
+                    form.getEmail(),
+                    encodedPassword
+            );
+            default -> {
+                bindingResult.rejectValue("role", "invalid.role", "Invalid role selected.");
+                model.addAttribute("editing", false);
+                return "users/form";
+            }
+        }
+
+        userRepository.save(newUser);
         redirectAttributes.addFlashAttribute("successMessage", "User created successfully.");
         return "redirect:/admin/users";
     }
@@ -69,6 +99,29 @@ public class UserController {
     public String showEditForm(@PathVariable Long id,
                                Model model,
                                RedirectAttributes redirectAttributes) {
+        User user = userRepository.findById(id).orElse(null);
+        if (user == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "User not found.");
+            return "redirect:/admin/users";
+        }
+
+        UserForm form = new UserForm();
+        form.setEmail(user.getEmail());
+        form.setRole(user.getDisplayRole()); // "ADMIN"/"MANAGER"/"EMPLOYEE"
+        // password left blank on purpose
+
+        model.addAttribute("editing", true);
+        model.addAttribute("userId", id);
+        model.addAttribute("userForm", form);
+        return "users/form";
+    }
+
+    @PostMapping("/{id}")
+    public String updateUser(@PathVariable Long id,
+                             @Valid @ModelAttribute("userForm") UserForm form,
+                             BindingResult bindingResult,
+                             RedirectAttributes redirectAttributes,
+                             Model model) {
 
         Optional<User> userOpt = userRepository.findById(id);
         if (userOpt.isEmpty()) {
@@ -76,38 +129,22 @@ public class UserController {
             return "redirect:/admin/users";
         }
 
-        model.addAttribute("user", userOpt.get());
-        return "users/form";
-    }
-
-    // HANDLE UPDATE
-    @PostMapping("/{id}")
-    public String updateUser(@PathVariable Long id,
-                             @Valid @ModelAttribute("user") User user,
-                             BindingResult bindingResult,
-                             RedirectAttributes redirectAttributes) {
-
         if (bindingResult.hasErrors()) {
+            model.addAttribute("editing", true);
+            model.addAttribute("userId", id);
             return "users/form";
         }
 
-        // Load existing user
-        Optional<User> existingOpt = userRepository.findById(id);
-        if (existingOpt.isEmpty()) {
-            redirectAttributes.addFlashAttribute("errorMessage", "User not found.");
-            return "redirect:/admin/users";
+        User user = userOpt.get();
+
+        user.setEmail(form.getEmail());
+
+
+        if (form.getPassword() != null && !form.getPassword().isBlank()) {
+            user.setPasswordHash(passwordEncoder.encode(form.getPassword()));
         }
 
-        User existing = existingOpt.get();
-
-        // Copy over fields that are allowed to change
-        existing.setEmail(user.getEmail());
-        existing.setEnabled(user.isEnabled());
-        existing.setPasswordHash(user.getPasswordHash());
-        // if you have other mutable fields (like department, etc.), copy them too
-
-        userRepository.save(existing);
-
+        userRepository.save(user);
         redirectAttributes.addFlashAttribute("successMessage", "User updated successfully.");
         return "redirect:/admin/users";
     }
@@ -134,11 +171,9 @@ public class UserController {
     @GetMapping("/report")
     public String userReport(Model model) {
         List<User> users = userRepository.findAll();
-
         model.addAttribute("reportTitle", "User Accounts Report");
-        model.addAttribute("generatedAt", LocalDateTime.now());
+        model.addAttribute("generatedAt", java.time.LocalDateTime.now());
         model.addAttribute("users", users);
-
-        return "users/report";
+        return "reports/users";
     }
 }

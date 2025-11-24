@@ -7,11 +7,12 @@ import jakarta.persistence.Entity;
 @DiscriminatorValue("ADMIN")
 public class Admin extends User {
 
-    public Admin() {
+    protected Admin() {
         super();
     }
 
     public Admin(String email, String passwordHash, boolean enabled) {
         super(email, passwordHash);
+        setEnabled(enabled);
     }
 }

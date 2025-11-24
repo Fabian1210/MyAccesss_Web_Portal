@@ -14,15 +14,4 @@ public class Manager extends User {
     public Manager(String email, String passwordHash) {
         super(email, passwordHash);
     }
-
-    @Override
-    public boolean hasAccess(String featureKey) {
-        return switch (featureKey) {
-            case "VIEW_USERS",
-                 "VIEW_DEPARTMENT",
-                 "VIEW_REPORTS",
-                 "MANAGE_PROJECTS" -> true;
-            default -> false;
-        };
-    }
 }

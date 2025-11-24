@@ -108,7 +108,7 @@ public abstract class User {
         return createdAt;
     }
 
-    public void setCreatedAt(LocalDateTime createdAt) {
+    public void setCreatedAt(LocalDateTime createdAt) {  // for seeding/tests
         this.createdAt = createdAt;
     }
 }
