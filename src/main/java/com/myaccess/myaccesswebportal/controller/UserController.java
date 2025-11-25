@@ -19,7 +19,6 @@ import java.util.List;
 
 @Controller
 @RequestMapping("/admin/users")
-@PreAuthorize("hasRole('ADMIN')")
 public class UserController {
 
     private final UserRepository userRepository;
@@ -31,6 +30,7 @@ public class UserController {
         this.passwordEncoder = passwordEncoder;
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping
     public String listUsers(Model model,
                             @RequestParam(value = "q", required = false) String query) {
@@ -47,6 +47,7 @@ public class UserController {
         return "users/list";
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/new")
     public String showCreateForm(Model model) {
         model.addAttribute("editing", false);
@@ -54,6 +55,7 @@ public class UserController {
         return "users/form";
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
     public String createUser(@Valid @ModelAttribute("userForm") UserForm form,
                              BindingResult bindingResult,
@@ -83,6 +85,7 @@ public class UserController {
         return "redirect:/admin/users";
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/{id}/edit")
     public String showEditForm(@PathVariable Long id,
                                Model model,
@@ -106,6 +109,7 @@ public class UserController {
         return "users/form";
     }
 
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{id}")
     public String updateUser(@PathVariable Long id,
                              @Valid @ModelAttribute("userForm") UserForm form,
@@ -138,7 +142,7 @@ public class UserController {
         return "redirect:/admin/users";
     }
 
-    // DELETE USER
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/{id}/delete")
     public String deleteUser(@PathVariable Long id,
                              RedirectAttributes redirectAttributes) {
@@ -153,6 +157,7 @@ public class UserController {
         return "redirect:/admin/users";
     }
 
+    @PreAuthorize("hasAnyRole('ADMIN','MANAGER')")
     @GetMapping("/report")
     public String userReport(Model model) {
         List<User> users = userRepository.findAll();
